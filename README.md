@@ -16,13 +16,13 @@ The dataset used is the Heart Disease UCI dataset obtained from a public reposit
 The following six classification models were implemented and evaluated on the same dataset:
 
 | ML Model | Accuracy | AUC | Precision | Recall | F1 Score | MCC |
-|--------|----------|-----|-----------|--------|----------|-----|
-| Logistic Regression | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
-| Decision Tree | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
-| KNN | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
-| Naive Bayes | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
-| Random Forest | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
-| XGBoost | (from output) | (from output) | (from output) | (from output) | (from output) | (from output) |
+|---------|----------|-----|-----------|--------|----------|-----|
+| Logistic Regression | 0.8478 | 0.9189 | 0.8426 | 0.8922 | 0.8667 | 0.6913 |
+| Decision Tree | 0.8370 | 0.8338 | 0.8462 | 0.8627 | 0.8544 | 0.6694 |
+| KNN | 0.8315 | 0.8949 | 0.8447 | 0.8529 | 0.8488 | 0.6586 |
+| Naive Bayes | 0.8261 | 0.8775 | 0.8365 | 0.8529 | 0.8447 | 0.6473 |
+| Random Forest | 0.8967 | 0.9500 | 0.8807 | 0.9412 | 0.9100 | 0.7916 |
+| XGBoost | 0.8804 | 0.9399 | 0.8704 | 0.9216 | 0.8952 | 0.7579 |
 
 ## d. Observations on Model Performance
 
