@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -41,32 +40,32 @@ if uploaded_file:
         st.error("Target column 'num' not found in uploaded file.")
         st.stop()
 
-    # ----- TARGET -----
+    # Target
     y = (df["num"] > 0).astype(int)
     X = df.drop("num", axis=1)
 
-    # ----- ENCODE CATEGORICAL FEATURES -----
+    # Encode categorical features
     for col in X.columns:
         if X[col].dtype == "object":
             le = LabelEncoder()
             X[col] = le.fit_transform(X[col].astype(str))
 
-    # ----- HANDLE MISSING VALUES -----
+    # Handle missing values
     imputer = SimpleImputer(strategy="median")
     X = imputer.fit_transform(X)
 
-    # ----- SCALE FEATURES -----
+    # Scale features
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
 
-    # ----- LOAD MODEL -----
+    # Load model
     model = joblib.load(f"model/{model_name.replace(' ', '_')}.pkl")
 
-    # ----- PREDICT -----
+    # Predict
     y_pred = model.predict(X)
     y_prob = model.predict_proba(X)[:, 1]
 
-    # ----- METRICS -----
+    # Metrics
     st.subheader("Evaluation Metrics")
     st.write({
         "Accuracy": accuracy_score(y, y_pred),
