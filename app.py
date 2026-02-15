@@ -19,6 +19,15 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # -------------------------------------------------
+# Session state init
+# -------------------------------------------------
+if "run_evaluation" not in st.session_state:
+    st.session_state.run_evaluation = False
+
+if "df_eval" not in st.session_state:
+    st.session_state.df_eval = None
+
+# -------------------------------------------------
 # Page setup
 # -------------------------------------------------
 st.set_page_config(page_title="ML Assignment 2", layout="centered")
@@ -55,7 +64,7 @@ model_name = st.selectbox(
 )
 
 # -------------------------------------------------
-# Optional upload section
+# Upload section
 # -------------------------------------------------
 st.subheader("Provide Test Data for Evaluation")
 
@@ -70,28 +79,28 @@ use_uploaded = st.checkbox(
 )
 
 # -------------------------------------------------
-# Run evaluation ONLY on user action
+# Action buttons (SESSION SAFE)
 # -------------------------------------------------
-run_evaluation = False
-
 if use_uploaded and uploaded_file is not None:
     if st.button("Run Evaluation on Uploaded Test Data"):
-        df = pd.read_csv(uploaded_file)
-        run_evaluation = True
-        st.info("Evaluating on uploaded test dataset")
+        st.session_state.df_eval = pd.read_csv(uploaded_file)
+        st.session_state.run_evaluation = True
+        st.success("Evaluating on uploaded test dataset")
 
 elif not use_uploaded:
     if st.button("Run Evaluation on Official Test Data"):
-        df = pd.read_csv(TEST_DATA_URL)
-        run_evaluation = True
-        st.info("Evaluating on official test dataset (matches notebook & README)")
+        st.session_state.df_eval = pd.read_csv(TEST_DATA_URL)
+        st.session_state.run_evaluation = True
+        st.success("Evaluating on official test dataset")
 
-if not run_evaluation:
-    st.warning(
-        "Please upload test data or choose the official test dataset, "
-        "then click the evaluation button."
-    )
+# -------------------------------------------------
+# Stop until evaluation is triggered
+# -------------------------------------------------
+if not st.session_state.run_evaluation:
+    st.info("Please choose a test dataset and click the evaluation button.")
     st.stop()
+
+df = st.session_state.df_eval
 
 # -------------------------------------------------
 # Validate target
@@ -112,4 +121,62 @@ X = df.drop("num", axis=1)
 for col in X.columns:
     if X[col].dtype == "object":
         le = LabelEncoder()
-        X
+        X[col] = le.fit_transform(X[col].astype(str))
+
+# -------------------------------------------------
+# Impute + scale
+# -------------------------------------------------
+imputer = SimpleImputer(strategy="median")
+X = imputer.fit_transform(X)
+
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# -------------------------------------------------
+# Load model
+# -------------------------------------------------
+model = joblib.load(f"model/{model_name.replace(' ', '_')}.pkl")
+
+# -------------------------------------------------
+# Predictions
+# -------------------------------------------------
+y_pred = model.predict(X)
+y_prob = model.predict_proba(X)[:, 1]
+
+# -------------------------------------------------
+# Metrics as cards
+# -------------------------------------------------
+st.subheader("Evaluation Metrics")
+
+c1, c2, c3 = st.columns(3)
+c4, c5, c6 = st.columns(3)
+
+c1.metric("Accuracy", f"{accuracy_score(y, y_pred):.4f}")
+c2.metric("AUC", f"{roc_auc_score(y, y_prob):.4f}")
+c3.metric("Precision", f"{precision_score(y, y_pred):.4f}")
+c4.metric("Recall", f"{recall_score(y, y_pred):.4f}")
+c5.metric("F1 Score", f"{f1_score(y, y_pred):.4f}")
+c6.metric("MCC", f"{matthews_corrcoef(y, y_pred):.4f}")
+
+# -------------------------------------------------
+# Confusion Matrix
+# -------------------------------------------------
+st.subheader("Confusion Matrix")
+
+cm = confusion_matrix(y, y_pred)
+fig, ax = plt.subplots()
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+ax.set_xlabel("Predicted")
+ax.set_ylabel("Actual")
+st.pyplot(fig)
+
+# -------------------------------------------------
+# Classification Report
+# -------------------------------------------------
+st.subheader("Classification Report")
+
+report_df = pd.DataFrame(
+    classification_report(y, y_pred, output_dict=True)
+).transpose()
+
+st.dataframe(report_df.style.background_gradient(cmap="Greens"))
