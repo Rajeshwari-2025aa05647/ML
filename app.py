@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (
@@ -88,7 +87,7 @@ y = (df["num"] > 0).astype(int)
 X = df.drop("num", axis=1)
 
 # -------------------------------------------------
-# Encode categorical features (MUST match notebook)
+# Encode categorical features
 # -------------------------------------------------
 for col in X.columns:
     if X[col].dtype == "object":
@@ -96,10 +95,14 @@ for col in X.columns:
         X[col] = le.fit_transform(X[col].astype(str))
 
 # -------------------------------------------------
+# 🔑 FORCE ALL FEATURES TO NUMERIC
+# -------------------------------------------------
+X = X.apply(pd.to_numeric, errors="coerce")
+
+# -------------------------------------------------
 # Apply preprocessing pipeline
 # -------------------------------------------------
 preprocess_pipeline = joblib.load("model/preprocess_pipeline.pkl")
-
 X = preprocess_pipeline.transform(X)
 
 # -------------------------------------------------
@@ -114,7 +117,7 @@ y_pred = model.predict(X)
 y_prob = model.predict_proba(X)[:, 1]
 
 # -------------------------------------------------
-# Metrics as CARDS
+# Metrics as cards
 # -------------------------------------------------
 st.subheader("Evaluation Metrics")
 
@@ -129,7 +132,7 @@ c5.metric("F1 Score", f"{f1_score(y, y_pred):.4f}")
 c6.metric("MCC", f"{matthews_corrcoef(y, y_pred):.4f}")
 
 # -------------------------------------------------
-# Confusion Matrix (aesthetic)
+# Confusion Matrix
 # -------------------------------------------------
 st.subheader("Confusion Matrix")
 
@@ -141,7 +144,7 @@ ax.set_ylabel("Actual")
 st.pyplot(fig)
 
 # -------------------------------------------------
-# Classification Report (table)
+# Classification Report
 # -------------------------------------------------
 st.subheader("Classification Report")
 
