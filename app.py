@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
@@ -18,13 +19,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # -------------------------------------------------
-# Session state initialization
+# Session state
 # -------------------------------------------------
-if "run_evaluation" not in st.session_state:
-    st.session_state.run_evaluation = False
-
-if "df_eval" not in st.session_state:
-    st.session_state.df_eval = None
+if "run" not in st.session_state:
+    st.session_state.run = False
+if "df" not in st.session_state:
+    st.session_state.df = None
 
 # -------------------------------------------------
 # Page setup
@@ -33,7 +33,7 @@ st.set_page_config(page_title="ML Assignment 2", layout="centered")
 st.title("Machine Learning Classification Models")
 
 # -------------------------------------------------
-# Official test data download
+# Test data
 # -------------------------------------------------
 st.subheader("Official Test Dataset")
 
@@ -42,10 +42,7 @@ TEST_DATA_URL = (
     "Rajeshwari-2025aa05647/ML_Assignment_2/main/test_data.csv"
 )
 
-st.markdown(
-    f"[⬇️ Download Official Test Data CSV]({TEST_DATA_URL})",
-    unsafe_allow_html=True
-)
+st.markdown(f"[⬇️ Download Official Test Data CSV]({TEST_DATA_URL})")
 
 # -------------------------------------------------
 # Model selection
@@ -63,87 +60,82 @@ model_name = st.selectbox(
 )
 
 # -------------------------------------------------
-# Upload section
+# Upload option
 # -------------------------------------------------
 st.subheader("Provide Test Data for Evaluation")
 
-uploaded_file = st.file_uploader(
+uploaded = st.file_uploader(
     "Upload CSV test file (must contain 'num' column)",
     type=["csv"]
 )
 
-use_uploaded = st.checkbox(
-    "Use uploaded CSV instead of official test data",
-    value=False
-)
+use_uploaded = st.checkbox("Use uploaded CSV instead of official test data")
 
 # -------------------------------------------------
-# Evaluation trigger (session-safe)
+# Buttons
 # -------------------------------------------------
-if use_uploaded and uploaded_file is not None:
+if use_uploaded and uploaded is not None:
     if st.button("Run Evaluation on Uploaded Test Data"):
-        st.session_state.df_eval = pd.read_csv(uploaded_file)
-        st.session_state.run_evaluation = True
+        st.session_state.df = pd.read_csv(uploaded)
+        st.session_state.run = True
         st.success("Evaluating on uploaded test dataset")
 
 elif not use_uploaded:
     if st.button("Run Evaluation on Official Test Data"):
-        st.session_state.df_eval = pd.read_csv(TEST_DATA_URL)
-        st.session_state.run_evaluation = True
+        st.session_state.df = pd.read_csv(TEST_DATA_URL)
+        st.session_state.run = True
         st.success("Evaluating on official test dataset")
 
-# -------------------------------------------------
-# Stop execution until evaluation is triggered
-# -------------------------------------------------
-if not st.session_state.run_evaluation:
-    st.info(
-        "Please upload a test dataset or choose the official test dataset, "
-        "then click the evaluation button."
-    )
+if not st.session_state.run:
+    st.info("Select test data and click Run Evaluation.")
     st.stop()
 
-df = st.session_state.df_eval
+df = st.session_state.df
 
 # -------------------------------------------------
-# Validate target column
+# Validate target
 # -------------------------------------------------
 if "num" not in df.columns:
-    st.error("Target column 'num' not found in dataset.")
+    st.error("Target column 'num' not found.")
     st.stop()
 
 # -------------------------------------------------
-# Split features & target
+# Split
 # -------------------------------------------------
 y = (df["num"] > 0).astype(int)
 X = df.drop("num", axis=1)
 
 # -------------------------------------------------
-# Encode categorical features (same as notebook)
+# Encode categoricals
 # -------------------------------------------------
 for col in X.columns:
     if X[col].dtype == "object":
-        le = LabelEncoder()
-        X[col] = le.fit_transform(X[col].astype(str))
+        X[col] = LabelEncoder().fit_transform(X[col].astype(str))
 
 # -------------------------------------------------
-# Apply preprocessing pipeline (fitted on TRAIN data)
+# FORCE numeric (critical)
 # -------------------------------------------------
-preprocess_pipeline = joblib.load("model/preprocess_pipeline.pkl")
-X = preprocess_pipeline.transform(X)
+X = X.apply(pd.to_numeric, errors="coerce")
 
 # -------------------------------------------------
-# Load trained model
+# Impute + scale (inline, stable)
+# -------------------------------------------------
+X = SimpleImputer(strategy="median").fit_transform(X)
+X = StandardScaler().fit_transform(X)
+
+# -------------------------------------------------
+# Load model
 # -------------------------------------------------
 model = joblib.load(f"model/{model_name.replace(' ', '_')}.pkl")
 
 # -------------------------------------------------
-# Predictions
+# Predict
 # -------------------------------------------------
 y_pred = model.predict(X)
 y_prob = model.predict_proba(X)[:, 1]
 
 # -------------------------------------------------
-# Metrics as cards
+# Metrics
 # -------------------------------------------------
 st.subheader("Evaluation Metrics")
 
