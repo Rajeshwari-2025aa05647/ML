@@ -100,7 +100,6 @@ for col in X.columns:
 # -------------------------------------------------
 preprocess_pipeline = joblib.load("model/preprocess_pipeline.pkl")
 
-X = X.values  # convert DataFrame → NumPy (important)
 X = preprocess_pipeline.transform(X)
 
 # -------------------------------------------------
