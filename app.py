@@ -97,16 +97,13 @@ for col in X.columns:
         X[col] = le.fit_transform(X[col].astype(str))
 
 # -------------------------------------------------
-# Handle missing values
+# Handle missing values and scale features
 # -------------------------------------------------
-imputer = SimpleImputer(strategy="median")
-X = imputer.fit_transform(X)
+imputer = joblib.load("model/imputer.pkl")
+scaler = joblib.load("model/scaler.pkl")
 
-# -------------------------------------------------
-# Scale features
-# -------------------------------------------------
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
+X = imputer.transform(X)
+X = scaler.transform(X)
 
 # -------------------------------------------------
 # Load model
